@@ -9,6 +9,8 @@
 --%>
 <%@ page contentType="text/html;charset=UTF-8" %>
 
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt"
     prefix="fmt" %>
 
@@ -38,15 +40,210 @@
    
  	// Determine whether a file is REQUIRED to be uploaded (default to true)
  	boolean fileRequired = ConfigurationManager.getBooleanProperty("webui.submit.upload.required", true);
-%>
+    boolean ajaxProgress = ConfigurationManager.getBooleanProperty("webui.submit.upload.ajax", true);
+
+    if (ajaxProgress)
+    {
+ %>
+<c:set var="dspace.layout.head.last" scope="request">
+	<link rel="stylesheet" href="<%= request.getContextPath() %>/static/css/jquery.fileupload-ui.css">
+	<!-- CSS adjustments for browsers with JavaScript disabled -->
+	<noscript><link rel="stylesheet" href="<%= request.getContextPath() %>/static/css/jquery.fileupload-ui-noscript.css"></noscript>
+	<script type="text/javascript" src="<%= request.getContextPath() %>/static/js/jquery/jquery.iframe-transport.js"></script>
+	<script type="text/javascript" src="<%= request.getContextPath() %>/static/js/jquery/jquery.fileupload.js"></script>
+<%-- 	<script type="text/javascript" src="<%= request.getContextPath() %>/static/js/jquery/jquery.fileupload-ui.js"></script>--%>
+    <script type="text/javascript">
+    function setupAjaxUpload($, data){
+    	var progressbarArea = $("#progressBarArea");
+		progressbarArea.find('p.progressBarInitMsg').show();
+   		progressbarArea.find('p.progressBarProgressMsg').hide();
+   		progressbarArea.find('p.progressBarCompleteMsg').hide();
+   		progressbarArea.hide();
+   		
+   		var inputToRestore = $('#uploadForm').data('inputToRestore');
+   		if (inputToRestore == null) {
+			inputToRestore = $('#uploadForm').find('input[type="submit"]').not(":disabled");   			
+   		}
+		inputToRestore.removeAttr('disabled');
+		inputToRestore.off('click.uploadProgressDS');
+   		if (data != null) {
+   			data.files = [];
+			$('#uploadForm').find('input[name="ajaxUpload"]').remove();
+			$('#selectedFile').remove();
+   		}
+    }
+    
+	jQuery(document).ready(function($){		
+		$('#tfile').wrap('<span id="spanFile" class="fileinput-button"><span><fmt:message key="jsp.submit.choose-file.upload-ajax.button.select-file"/></span>');
+		$('#spanFile').button({icons: {primary: "ui-icon ui-icon-folder-open"}});
+		$('#uploadForm').fileupload({
+				sequentialUploads: true,
+				autoUpload: false,
+		        dataType: 'json'})
+        .on('fileuploaddone', function (e, data) {
+        	var resultFile = data.result.files[0];
+    		if (resultFile.status == <%= UploadStep.STATUS_COMPLETE %> || 
+    				resultFile.status == <%= UploadStep.STATUS_UNKNOWN_FORMAT %>)
+    		{
+    			var progressbarArea = $("#progressBarArea");
+	    		var progressbar = $("#progressBar");
+           		progressbarArea.find('p.progressBarProgressMsg').hide();
+           		progressbarArea.find('p.progressBarCompleteMsg').show();
+           		progressbar.progressbar({ value: data.loaded, max: data.total});
+	           	progressbarArea.find('span.bytesTotal').html(data.total);
+	           	if (resultFile.status == <%= UploadStep.STATUS_COMPLETE %>)
+           		{
+	           		$('#uploadFormPostAjax')
+	           			.append('<input type="hidden" name="<%= UploadStep.SUBMIT_UPLOAD_BUTTON %>" value="1">');
+           		}
+	           	else
+           		{
+	           		$('#uploadFormPostAjax')
+           				.append('<input type="hidden" name="submit_format_'+resultFile.bitstreamID+'" value="1">');
+	           		$('#uploadFormPostAjax')
+          					.append('<input type="hidden" name="bitstream_id" value="'+resultFile.bitstreamID+'">');
+           		}
+	           	
+	           	$('#uploadFormPostAjax').submit();	
+    		}
+    		else {
+    			//FIXME: trying to reset the form to allow a new upload
+                // let to strange behaviour where old XHR will be resumed producing
+                // fake upload and/or invalidating the progress bar count
+    			if (resultFile.status == <%= UploadStep.STATUS_NO_FILES_ERROR %>) {
+		        	//setupAjaxUpload($, data);
+               		$('#uploadFormPostAjax')
+    	       			.append('<input type="hidden" name="<%= UploadStep.SUBMIT_MORE_BUTTON %>" value="1">');
+	           		$('#uploadFormPostAjax').submit();
+    			}
+    			else if (resultFile.status == <%= UploadStep.STATUS_VIRUS_CHECKER_UNAVAILABLE %>) {
+		        	//setupAjaxUpload($, data);
+					$('#virusCheckNA').dialog({modal: true, buttons: {
+						'<fmt:message key="jsp.submit.choose-file.upload-ajax.dialog.close"/>': function() {
+								$(this).close();
+						}
+					}}).on('close', function(){
+						$('#uploadFormPostAjax')
+    		       			.append('<input type="hidden" name="<%= UploadStep.SUBMIT_MORE_BUTTON %>" value="1">');
+		           		$('#uploadFormPostAjax').submit();
+					});
+    			}
+				else if (resultFile.status == <%= UploadStep.STATUS_CONTAINS_VIRUS %>) {
+		        	//setupAjaxUpload($, data);
+					$('#virusFound').dialog({modal: true, buttons: {
+						'<fmt:message key="jsp.submit.choose-file.upload-ajax.dialog.close"/>': function() {
+							$(this).close();
+					}
+					}}).on('close', function(){
+						$('#uploadFormPostAjax')
+			       			.append('<input type="hidden" name="<%= UploadStep.SUBMIT_MORE_BUTTON %>" value="1">');
+		           		$('#uploadFormPostAjax').submit();
+					});
+    			}
+				else {
+		        	//setupAjaxUpload($, data);
+					$('#uploadFormPostAjax')
+    	       			.append('<input type="hidden" name="<%= UploadStep.SUBMIT_MORE_BUTTON %>" value="1">');
+	           		$('#uploadFormPostAjax').submit();
+				}
+    		}
+    		e.preventDefault();
+            })
+        .on('fileuploadadd', function (e, data) {
+	            if ($('#selectedFile').length > 0)
+	            {
+					$('#selectedFile').html(data.files[0].name);			
+	            }
+				else
+				{
+	        		$('<p id="selectedFile">'+data.files[0].name+'</p>').insertAfter($('#spanFile')).append('&nbsp;');		        		
+	        		var span = $('<span id="spanSelectedFile"><fmt:message key="jsp.submit.choose-file.upload-ajax.button.cancel"/></span>');
+	        		span.appendTo($('#selectedFile'));
+	        		$('#uploadForm').append('<input type="hidden" name="ajaxUpload" value="true">');
+	        		span.button({icons: {primary: "ui-icon ui-icon-cancel"}})
+	        			.click(function(e){
+	        				setupAjaxUpload($, data);
+	        		});
+        		
+	        		var inputToBind = $('#uploadForm').find('input[type="submit"]').not(":disabled");
+	        		var $this = this;
+	        		inputToBind.on('click.uploadProgressDS', function(e){
+					data.submit();
+					$('#uploadCancel').button().click(function (e) {
+					    e.preventDefault();
+					    if (!data.jqXHR) {
+			                data.context = data.context || template;
+			                data.errorThrown = 'abort';
+			                $this._trigger('fail', e, data);
+			            } else {
+			                data.jqXHR.abort();
+			            }
+					});
+					var inputToDisable = $('#uploadForm').find('input[type="submit"]').not(":disabled");
+					$('#uploadForm').data('inputToRestore', inputToDisable);
+					inputToDisable.attr('disabled','disabled');
+					$('#spanSelectedFile').remove();
+	            	e.preventDefault();
+	            	return false;
+	    		});
+       		}
+       	})
+        .on('fileuploadfail', function (e, data) {
+	        	e.preventDefault();    
+                //FIXME: trying to reset the form to allow a new upload
+                // let to strange behaviour where old XHR will be resumed producing
+                // fake upload and/or invalidating the progress bar count
+	        	//setupAjaxUpload($, data);
+           		$('#uploadFormPostAjax')
+           			.append('<input type="hidden" name="<%= UploadStep.SUBMIT_MORE_BUTTON %>" value="1">');
+           		$('#uploadFormPostAjax').submit();
+      		})
+		.on('fileuploadprogressall', function (e, data) {
+				console.log('progress');					
+				var percent = parseInt(data.loaded / data.total * 100, 10);
+	    		var progressbarArea = $("#progressBarArea");
+	    		var progressbar = $("#progressBar");
+				progressbar.progressbar({ value: data.loaded, max: data.total});
+		        progressbarArea.find('p.progressBarInitMsg').hide();
+    	       		progressbarArea.find('p.progressBarProgressMsg').show();
+           		progressbarArea.find('p.progressBarCompleteMsg').hide();
+	           	progressbarArea.find('span.bytesRead').html(data.loaded);
+	           	progressbarArea.find('span.bytesTotal').html(data.total);
+	           	progressbarArea.find('span.percent').html(percent);
+		})
+		.on('fileuploadsubmit', function (e, data) {
+			console.log('submit');
+			var progressbarArea = $("#progressBarArea");
+    		var progressbar = $("#progressBar");
+			progressbarArea.show();
+			progressbar.progressbar({value: false });
+			});
+
+		setupAjaxUpload($, null);
+		$('#virusFound').hide();
+		$('#virusCheckNA').hide();
+	});
+    </script>
+</c:set>
+<%  } %>
 
 
 <dspace:layout locbar="off"
                navbar="off"
                titlekey="jsp.submit.choose-file.title"
                nocache="true">
-
-    <form method="post" action="<%= request.getContextPath() %>/submit" enctype="multipart/form-data" onkeydown="return disableEnterKey(event);">
+<% if (ajaxProgress) { %>
+	<div style="display:none;" id="virusFound" title="<fmt:message key="jsp.submit.choose-file.upload-ajax.virus-found.title" />">
+		<p><fmt:message key="jsp.submit.virus-error.info" /></p>
+	</div>
+	<div style="display:none;" id="virusCheckNA" title="jsp.submit.choose-file.upload-ajax.virus-checkna.title">
+		<p><fmt:message key="jsp.submit.virus-checker-error.info" /></p>
+	</div>
+    <form style="display:none;" id="uploadFormPostAjax" method="post" action="<%= request.getContextPath() %>/submit" enctype="multipart/form-data" onkeydown="return disableEnterKey(event);">
+    <%= SubmissionController.getSubmissionParameters(context, request) %>    
+    </form>
+<% } %>
+    <form id="uploadForm" method="post" action="<%= request.getContextPath() %>/submit" enctype="multipart/form-data" onkeydown="return disableEnterKey(event);">
 		
 		<jsp:include page="/submit/progressbar.jsp"/>
 		<%-- Hidden fields needed for SubmissionController servlet to know which step is next--%>
@@ -74,6 +271,28 @@
 		<div class="submitFormHelp"><fmt:message key="jsp.submit.choose-file.info6"/>
         <dspace:popup page="<%= LocaleSupport.getLocalizedMessage(pageContext, \"help.formats\")%>"><fmt:message key="jsp.submit.choose-file.info7"/></dspace:popup>
         </div>
+
+<% if (ajaxProgress)
+{
+%>
+       <div id="progressBarArea" style="display: none;  width: 50%; float: right;">
+               <div id="progressBar"></div>
+               <p class="progressBarInitMsg">
+               			<fmt:message key="jsp.submit.choose-file.upload-ajax.uploadInit"/>
+               	</p>
+               <p class="progressBarProgressMsg" style="display: none;">
+                       <fmt:message key="jsp.submit.choose-file.upload-ajax.uploadInProgress">
+                               <fmt:param><span class="percent">&nbsp;</span></fmt:param>
+                               <fmt:param><span class="bytesRead">&nbsp;</span></fmt:param>
+                               <fmt:param><span class="bytesTotal">&nbsp;</span></fmt:param>
+                       </fmt:message></p>
+               <p class="progressBarCompleteMsg" style="display: none;">
+                       <fmt:message key="jsp.submit.choose-file.upload-ajax.uploadCompleted">
+                               <fmt:param><span class="bytesTotal">&nbsp;</span></fmt:param>
+                       </fmt:message></p>
+               <button id="uploadCancel"><fmt:message key="jsp.submit.choose-file.upload-ajax.button.cancel" /></button>        
+       </div>
+<% } %>
     
         <table border="0" align="center">
             <tr>

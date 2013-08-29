@@ -209,6 +209,7 @@ public class SubmissionController extends DSpaceServlet
             HttpServletResponse response) throws ServletException, IOException,
             SQLException, AuthorizeException
     {
+        System.out.println("chiamato");
     	// Configuration of current step in Item Submission Process
         SubmissionStepConfig currentStepConfig;
         

@@ -13,6 +13,7 @@ import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpSession;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededException;
@@ -31,6 +32,8 @@ import org.dspace.core.ConfigurationManager;
  */
 public class FileUploadRequest extends HttpServletRequestWrapper
 {
+    public static final String FILE_UPLOAD_LISTNER = "file-upload-listner";
+    
     private Map<String, String> parameters = new HashMap<String, String>();
 
     private Map<String, FileItem> fileitems = new HashMap<String, FileItem>();
@@ -64,6 +67,16 @@ public class FileUploadRequest extends HttpServletRequestWrapper
 
         // Create a new file upload handler
         ServletFileUpload upload = new ServletFileUpload(factory);
+        
+        // set file upload progress listener
+        FileUploadListener listener = new FileUploadListener();
+
+        HttpSession session = req.getSession();
+
+        session.setAttribute(FILE_UPLOAD_LISTNER, listener);
+
+        // upload servlet allows to set upload listener
+        upload.setProgressListener(listener);
         
         try
         {
