@@ -117,6 +117,10 @@ public class FileUploadRequest extends HttpServletRequestWrapper
             }
             throw new IOException(e.getMessage(), e);
         }
+        finally
+        {
+            session.removeAttribute(FILE_UPLOAD_LISTNER);
+        }
     }
 
     // Methods to replace HSR methods

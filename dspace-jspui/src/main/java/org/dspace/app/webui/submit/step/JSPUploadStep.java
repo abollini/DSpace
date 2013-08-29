@@ -191,7 +191,6 @@ public class JSPUploadStep extends JSPStep
         if (UIUtil.getBoolParameter(request, "ajaxUpload"))
         {
             Gson gson = new Gson();
-            JsonElement element = new  JsonArray();
             if (request.getHeader("HTTP_ACCEPT") != null
                     && request.getHeader("HTTP_ACCEPT").indexOf(
                             "application/json") != -1)
