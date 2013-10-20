@@ -273,10 +273,10 @@ public class ContainerAdapter extends AbstractAdapter
                 createField("dc","rights","license",null,rights_license);
                 createField("dc","title",null,null,title);
                 
-                boolean useCache = ConfigurationManager.getBooleanProperty("webui.strengths.cache");
+                boolean showCount = ConfigurationManager.getBooleanProperty("webui.strengths.show");
                  
-                //To improve scalability, XMLUI only adds item counts if they are cached
-                if (useCache)
+                //To improve scalability, XMLUI only adds item counts if they are shown
+                if (showCount)
         		{
 	                try
 	                {	//try to determine Collection size (i.e. # of items)
@@ -307,10 +307,10 @@ public class ContainerAdapter extends AbstractAdapter
                 createField("dc","rights",null,null,rights);
                 createField("dc","title",null,null,title);
                 
-                boolean useCache = ConfigurationManager.getBooleanProperty("webui.strengths.cache");
+                boolean showCount = ConfigurationManager.getBooleanProperty("webui.strengths.show");
         		
-                //To improve scalability, XMLUI only adds item counts if they are cached
-        		if (useCache)
+                //To improve scalability, XMLUI only adds item counts if they are shown
+        		if (showCount)
         		{
         			try
 	                {	//try to determine Community size (i.e. # of items)
