@@ -42,7 +42,7 @@ public class ItemCountDAOSolr implements ItemCountDAO
     SearchService searcher = dspace.getServiceManager().getServiceByName(SearchService.class.getName(), SearchService.class);
     
     /**
-     * Store the count of the given collection (does nothing in the Solr backend).
+     * Throw an ItemCountException as caching is not supported by the ItemCountDAOSolr.
      * 
      * @param collection
      * @param count
@@ -50,10 +50,12 @@ public class ItemCountDAOSolr implements ItemCountDAO
      */
     public void collectionCount(Collection collection, int count) throws ItemCountException
     {
+		throw new ItemCountException(
+				"Caching is not supported by the ItemCountDAOSolr as it is not really needed, SOLR is faster!");
     }
 
     /**
-     * Store the count of the given community (does nothing in the Solr backend).
+     * Throw an ItemCountException as caching is not supported by the ItemCountDAOSolr.
      * 
      * @param community
      * @param count
@@ -61,6 +63,8 @@ public class ItemCountDAOSolr implements ItemCountDAO
      */
     public void communityCount(Community community, int count) throws ItemCountException
     {
+    	throw new ItemCountException(
+				"Caching is not supported by the ItemCountDAOSolr as it is not really needed, SOLR is faster!");
     }
 
     /**
@@ -121,25 +125,4 @@ public class ItemCountDAOSolr implements ItemCountDAO
     public void remove(DSpaceObject dso) throws ItemCountException
     {
     }
-
-    /**
-     * remove the cache for the given collection (does nothing in the Solr backend)
-     * 
-     * @param collection
-     * @throws ItemCountException
-     */
-    private void removeCollection(Collection collection) throws ItemCountException
-    {
-    }
-    
-    /**
-     * Remove the cache for the given community (does nothing in the Solr backend)
-     * 
-     * @param community
-     * @throws ItemCountException
-     */
-    private void removeCommunity(Community community) throws ItemCountException
-    {
-    }
-    
 }
