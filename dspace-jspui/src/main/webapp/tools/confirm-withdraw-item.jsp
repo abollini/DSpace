@@ -48,20 +48,11 @@
     <form method="post" action="">
         <input type="hidden" name="item_id" value="<%= item.getID() %>"/>
         <input type="hidden" name="action" value="<%= EditItemServlet.CONFIRM_WITHDRAW %>"/>
-
-        <center>
-            <table width="70%">
-                <tr>
-                    <td align="left">
+		<div class="pull-right col-md-4">
                         <%-- <input type="submit" name="submit" value="Withdraw" /> --%>
-						<input type="submit" name="submit" value="<fmt:message key="jsp.tools.confirm-withdraw-item.withdraw.button"/>" />
-                    </td>
-                    <td align="right">
+						<input class="btn btn-danger col-md-6" type="submit" name="submit" value="<fmt:message key="jsp.tools.confirm-withdraw-item.withdraw.button"/>" />
                         <%-- <input type="submit" name="submit_cancel" value="Cancel" /> --%>
-						<input type="submit" name="submit_cancel" value="<fmt:message key="jsp.tools.general.cancel"/>" />
-                    </td>
-                </tr>
-            </table>
-        </center>
+						<input class="btn btn-default col-md-6" type="submit" name="submit_cancel" value="<fmt:message key="jsp.tools.general.cancel"/>" />
+		</div>
     </form>
 </dspace:layout>

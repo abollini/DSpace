@@ -55,8 +55,9 @@
         <input type="hidden" name="collection_id" value="<%= collection.getID() %>" />
         <input type="hidden" name="community_id" value="<%= community.getID() %>" />
         <input type="hidden" name="action" value="<%= EditCommunitiesServlet.CONFIRM_DELETE_COLLECTION %>" />
-
-		<input class="btn btn-default col-md-2" type="submit" name="submit_cancel" value="<fmt:message key="jsp.tools.general.cancel"/>"/>
-        <input class="btn btn-danger col-md-2 pull-right" type="submit" name="submit" value="<fmt:message key="jsp.tools.general.delete"/>"/>
+		<div class="pull-right col-md-4">
+			<input class="btn btn-default col-md-6" type="submit" name="submit_cancel" value="<fmt:message key="jsp.tools.general.cancel"/>"/>
+        	<input class="btn btn-danger col-md-6" type="submit" name="submit" value="<fmt:message key="jsp.tools.general.delete"/>"/>
+        </div>
     </form>
 </dspace:layout>
