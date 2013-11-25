@@ -151,10 +151,9 @@ public class UploadStep extends AbstractProcessingStep
             }
         }
         
-		if (buttonPressed.startsWith(PREVIOUS_BUTTON)
-				|| buttonPressed.startsWith(CANCEL_BUTTON))
+		if (buttonPressed.startsWith(PREVIOUS_BUTTON))
         {
-        	// always allow the user to go back or suspend the submission
+        	// always allow the user to go back or suspend the submission		    
 			return STATUS_COMPLETE;
         }
 		
