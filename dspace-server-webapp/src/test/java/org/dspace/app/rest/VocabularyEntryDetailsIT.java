@@ -14,13 +14,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.net.URI;
 import java.util.UUID;
 
 import org.dspace.app.rest.matcher.VocabularyEntryDetailsMatcher;
 import org.dspace.app.rest.test.AbstractControllerIntegrationTest;
+import org.dspace.content.authority.service.ChoiceAuthorityService;
+import org.dspace.core.service.PluginService;
+import org.dspace.services.ConfigurationService;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * 
@@ -28,6 +33,13 @@ import org.junit.Test;
  * @author Mykhaylo Boychuk (4science.it)
  */
 public class VocabularyEntryDetailsIT extends AbstractControllerIntegrationTest {
+    @Autowired
+    private ConfigurationService configurationService;
+    @Autowired
+    private PluginService pluginService;
+    @Autowired
+    private ChoiceAuthorityService cas;
+
     @Test
     public void discoverableNestedLinkTest() throws Exception {
         String token = getAuthToken(eperson.getEmail(), password);
@@ -91,6 +103,33 @@ public class VocabularyEntryDetailsIT extends AbstractControllerIntegrationTest 
         getClient(token).perform(get("/api/submission/vocabularyEntryDetails/srsc:ResearchSubjectCategories"))
                    .andExpect(status().isNotFound());
 
+    }
+
+    @Test
+    public void findOneSpecialIDTest() throws Exception {
+        configurationService.setProperty("plugin.named.org.dspace.content.authority.ChoiceAuthority",
+                "org.dspace.authority.AuthorityWithProblematicID = special");
+
+        // These clears have to happen so that the config is actually reloaded in those classes. This is needed for
+        // the properties that we're altering above and this is only used within the tests
+        pluginService.clearNamedPluginClasses();
+        cas.clearCache();
+
+        String token = getAuthToken(eperson.getEmail(), password);
+        getClient(token).perform(get(new URI("/api/submission/vocabularyEntryDetails/special:TheSlash%2FID")))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$",
+                                VocabularyEntryDetailsMatcher.matchAuthorityEntry("special:TheSlash/ID", "The display",
+                                        "The value")))
+                        .andExpect(jsonPath("$.selectable", is(true)))
+                        .andExpect(jsonPath("$._links.self.href",
+                                endsWith("api/submission/vocabularyEntryDetails/special:TheSlash%2FID")));
+        // we need to force a reload of the config now to be able to reload also the cache of the other
+        // authority related services. As this is needed just by this test method it is more efficient do it
+        // here instead that force these reload for each method extending the destroy method
+        configurationService.reloadConfig();
+        pluginService.clearNamedPluginClasses();
+        cas.clearCache();
     }
 
     @Test
